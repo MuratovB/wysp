@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WYSP - Create Post</title>
     <style>
+        * {
+            font-size: 18px;
+        }
+
         .uploads {
             display: flex;
             flex-flow: column;
@@ -13,28 +17,40 @@
 
         .upload-container {
             display: flex;
+            flex-direction: column;
         }
         
         .label {
             width: 100px;
+        }
+
+        label {
+            font-size: 24px;
         }
         
         .input {
             width: 200px;
         }
 
-        .btn {
-            width: 125px;
+        .btn button {
+            display: block;
+            margin-top: 10px;
+        }
+
+        .label .input .btn {
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <h1>Create New Post</h1>
+    <a href="/posts" style="text-decoration: none; color: black; font-size: 40px;">Cancel</a>
+
+    <h1 style="font-size: 40px;">Create New Post</h1>
 
     <div id="error-message" style="color: red; display: none;"></div>
 
     <form id="post-form" action="/post-create" method="post" enctype="multipart/form-data">
-        <label for="post_name">Post Name:</label>
+        <label for="post_name" style="font-size: 28px;">Post Name:</label>
         <input type="text" id="post_name" name="post_name" required><br><br>
         <div class="uploads">
             <div class="upload-container">

@@ -107,16 +107,21 @@ async def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/posts", response_class=HTMLResponse)
-async def posts(request: Request):
+async def posts(request: Request, page: int = 1, limit: int = 20):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM posts')
+
+    offset = (page - 1) * limit
+
+    cursor.execute('SELECT * FROM posts LIMIT ? OFFSET ?', (limit, offset))
     posts = cursor.fetchall()
 
     processed_posts = process_posts(posts)
 
     conn.close()
-    return templates.TemplateResponse("posts.html", {"request": request, "posts": processed_posts})
+
+    return templates.TemplateResponse("posts.html", {"request": request, "posts": processed_posts, "page": page})
+
 
 
 @app.get("/posts/{id}", response_class=HTMLResponse)
