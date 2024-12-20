@@ -107,20 +107,62 @@ async def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/posts", response_class=HTMLResponse)
-async def posts(request: Request, page: int = 1, limit: int = 20):
+async def posts(request: Request, page: int = 1, limit: int = 20, sort: str = "newest", filter: str = "all", search: str = ""):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     offset = (page - 1) * limit
 
-    cursor.execute('SELECT * FROM posts LIMIT ? OFFSET ?', (limit, offset))
+    query = 'SELECT * FROM posts'
+    filters = []
+    params = []
+
+    if filter == "liked":
+        query += " JOIN likes ON posts.id = likes.post_id WHERE likes.user_id = ?"
+        filters.append("liked")
+        params.append(request.session.get("user_id"))
+    elif filter == "favorited":
+        query += " JOIN favorites ON posts.id = favorites.post_id WHERE favorites.user_id = ?"
+        filters.append("favorited")
+        params.append(request.session.get("user_id"))
+    
+    if search:
+        if filters:
+            query += " AND post_name LIKE ? OR login LIKE ?"
+        else:
+            query += " WHERE post_name LIKE ? OR login LIKE ?"
+        params.extend([f"%{search}%", f"%{search}%"])
+
+    if sort == "likes":
+        query += " ORDER BY likes DESC"
+    elif sort == "favorites":
+        query += " ORDER BY favorites DESC"
+    elif sort == "views":
+        query += " ORDER BY views DESC"
+    elif sort == "random":
+        query += " ORDER BY RANDOM()"
+    elif sort == "oldest":
+        query += " ORDER BY created_at ASC"
+    else:
+        query += " ORDER BY created_at DESC"
+
+    query += " LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    cursor.execute(query, tuple(params))
     posts = cursor.fetchall()
 
     processed_posts = process_posts(posts)
-
     conn.close()
 
-    return templates.TemplateResponse("posts.html", {"request": request, "posts": processed_posts, "page": page})
+    return templates.TemplateResponse("posts.html", {
+        "request": request, 
+        "posts": processed_posts, 
+        "page": page,
+        "sort": sort,
+        "filter": filter,
+        "search": search
+    })
 
 
 

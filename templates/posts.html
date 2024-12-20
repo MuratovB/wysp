@@ -127,7 +127,31 @@
 </head>
 <body>
     <h1>Posts</h1>
+
+    <div class="filters">
+        <label for="sort_filter">Sort By:</label>
+        <select id="sort_filter">
+            <option value="newest" {% if sort == "newest" %}selected{% endif %}>Latest Created</option>
+            <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest Created</option>
+            <option value="likes" {% if sort == "likes" %}selected{% endif %}>Likes</option>
+            <option value="favorites" {% if sort == "favorites" %}selected{% endif %}>Favorites</option>
+            <option value="views" {% if sort == "views" %}selected{% endif %}>Views</option>
+            <option value="random" {% if sort == "random" %}selected{% endif %}>Random</option>
+        </select>
+    
+        <label for="filter_type">Filter By:</label>
+        <select id="filter_type">
+            <option value="all" {% if filter == "all" %}selected{% endif %}>All Posts</option>
+            <option value="liked" {% if filter == "liked" %}selected{% endif %}>Liked Posts</option>
+            <option value="favorited" {% if filter == "favorited" %}selected{% endif %}>Favorited Posts</option>
+        </select>
+    
+        <input type="text" id="search_input" placeholder="Search posts..." value="{{ search }}">
+    </div>
+    
+
     <a href="/post-create"><button class="new-post-btn">Create New Post</button></a>
+
     <div class="posts-container" id="posts-container">
         {% for post in posts %}
         <a href="/posts/{{ post.id }}" class="post-container" style="color: black; text-decoration: none;">
@@ -153,16 +177,36 @@
         let currentPage = {{ page }};
         const loadingIndicator = document.getElementById('loading');
         const postContainer = document.getElementById('posts-container');
-
-        async function loadMorePosts() {
-            const response = await fetch(`/posts?page=${currentPage + 1}&limit=20`);
+        
+        async function updatePosts() {
+            const sortFilter = document.getElementById('sort_filter').value;
+            const filterType = document.getElementById('filter_type').value;
+            const searchQuery = document.getElementById('search_input').value;
+    
+            const response = await fetch(`/posts?page=${currentPage}&limit=20&sort=${sortFilter}&filter=${filterType}&search=${searchQuery}`);
             const data = await response.text();
-
+    
+            const newPosts = new DOMParser().parseFromString(data, 'text/html').getElementById('posts-container').innerHTML;
+            postContainer.innerHTML = newPosts;
+        }
+    
+        document.getElementById('sort_filter').addEventListener('change', updatePosts);
+        document.getElementById('filter_type').addEventListener('change', updatePosts);
+        document.getElementById('search_input').addEventListener('input', updatePosts);
+    
+        async function loadMorePosts() {
+            const sortFilter = document.getElementById('sort_filter').value;
+            const filterType = document.getElementById('filter_type').value;
+            const searchQuery = document.getElementById('search_input').value;
+    
+            const response = await fetch(`/posts?page=${currentPage + 1}&limit=20&sort=${sortFilter}&filter=${filterType}&search=${searchQuery}`);
+            const data = await response.text();
+    
             const newPosts = new DOMParser().parseFromString(data, 'text/html').getElementById('posts-container').innerHTML;
             postContainer.innerHTML += newPosts;
             currentPage += 1;
         }
-
+    
         window.addEventListener('scroll', () => {
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
                 if (loadingIndicator.style.display !== 'none') return;
@@ -173,5 +217,6 @@
             }
         });
     </script>
+    
 </body>
 </html>
