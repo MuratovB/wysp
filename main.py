@@ -118,30 +118,30 @@ async def posts(request: Request):
     conn.close()
     return templates.TemplateResponse("posts.html", {"request": request, "posts": processed_posts})
 
+
 @app.get("/posts/{id}", response_class=HTMLResponse)
 async def posts_detail(request: Request, id: int):
     user_id = request.session.get("user_id")
-    if user_id is None:
-        raise HTTPException(status_code=403, detail="You must be logged in")
     
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('SELECT 1 FROM post_views WHERE user_id = ? AND post_id = ?', (user_id, id))
-    already_viewed = cursor.fetchone()
+    cursor.execute('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?', (user_id, id))
+    is_liked = cursor.fetchone() is not None
 
-    if not already_viewed:
-        cursor.execute('UPDATE posts SET views = views + 1 WHERE id = ?', (id,))
-        cursor.execute('INSERT INTO post_views (user_id, post_id) VALUES (?, ?)', (user_id, id))
-        conn.commit()
+    cursor.execute('SELECT 1 FROM favorites WHERE user_id = ? AND post_id = ?', (user_id, id))
+    is_favorite = cursor.fetchone() is not None
 
     cursor.execute('SELECT * FROM posts WHERE id = ?', (id,))
     post = cursor.fetchone()
-    post = process_posts([post])[0]
-    
+
+    post_data = process_posts([post])[0]
+    post_data['is_liked'] = is_liked
+    post_data['is_favorite'] = is_favorite
+
     conn.close()
-    
-    return templates.TemplateResponse("post_detail.html", {"request": request, "post": post})
+
+    return templates.TemplateResponse("post_detail.html", {"request": request, "post": post_data})
 
 
 
@@ -230,6 +230,45 @@ async def post_create_action(
     conn.close()
 
     return RedirectResponse(url="/posts", status_code=303)
+
+@app.post("/like/{post_id}")
+async def like_post(post_id: int, request: Request, user_id: int = Depends(get_user_id)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?', (user_id, post_id))
+    already_liked = cursor.fetchone()
+
+    if already_liked:
+        cursor.execute('DELETE FROM likes WHERE user_id = ? AND post_id = ?', (user_id, post_id))
+        cursor.execute('UPDATE posts SET likes = likes - 1 WHERE id = ?', (post_id,))
+    else:
+        cursor.execute('INSERT INTO likes (user_id, post_id) VALUES (?, ?)', (user_id, post_id))
+        cursor.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
+
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=f"/posts/{post_id}", status_code=303)
+
+@app.post("/favorite/{post_id}")
+async def favorite_post(post_id: int, request: Request, user_id: int = Depends(get_user_id)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT 1 FROM favorites WHERE user_id = ? AND post_id = ?', (user_id, post_id))
+    already_favorite = cursor.fetchone()
+
+    if already_favorite:
+        cursor.execute('DELETE FROM favorites WHERE user_id = ? AND post_id = ?', (user_id, post_id))
+        cursor.execute('UPDATE posts SET favorites = favorites - 1 WHERE id = ?', (post_id,))
+    else:
+        cursor.execute('INSERT INTO favorites (user_id, post_id) VALUES (?, ?)', (user_id, post_id))
+        cursor.execute('UPDATE posts SET favorites = favorites + 1 WHERE id = ?', (post_id,))
+
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=f"/posts/{post_id}", status_code=303)
+
 
 
 

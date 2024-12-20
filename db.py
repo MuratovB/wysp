@@ -51,7 +51,7 @@ def init_db():
     ''')
 
     cursor.execute('''
-        CREATE TABLE post_views (
+        CREATE TABLE IF NOT EXISTS post_views (
             user_id INTEGER,
             post_id INTEGER,
             PRIMARY KEY (user_id, post_id),
