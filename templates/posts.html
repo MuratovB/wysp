@@ -20,9 +20,33 @@
             margin-bottom: 20px;
         }
 
+        .nav {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .nav-form {
+            display: flex;
+            align-items: end;
+            gap: 40px;
+        }
+
+        .nav-form p, button {
+            font-size: 24px;
+        }
+
+        h1, .nav-form p {
+            user-select: none;
+        }
+
+        .filters label, select, input {
+            font-size: 22px;
+        }
+
         .new-post-btn {
             font-size: 20px;
             margin-bottom: 20px;
+            margin-top: 10px;
         }
 
         .posts-container {
@@ -126,28 +150,38 @@
     </style>
 </head>
 <body>
-    <h1>Posts</h1>
+    <div class="nav">
+        <h1>Posts</h1>
+
+        <form action="/logout" method="post" class="nav-form">
+            <a href="/profile/{{ login }}" style="text-decoration: none; color: black;"><p>{{ login }}</p></a>
+            <button type="submit" style="margin-right: 20px;">Sign Out</button>
+        </form>
+    </div>
+    
 
     <div class="filters">
         <label for="sort_filter">Sort By:</label>
         <select id="sort_filter">
-            <option value="newest" {% if sort == "newest" %}selected{% endif %}>Latest Created</option>
+            <option value="newest" {% if sort == "newest" %}selected{% else %}selected{% endif %}>Latest Created</option>
             <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest Created</option>
             <option value="likes" {% if sort == "likes" %}selected{% endif %}>Likes</option>
             <option value="favorites" {% if sort == "favorites" %}selected{% endif %}>Favorites</option>
             <option value="views" {% if sort == "views" %}selected{% endif %}>Views</option>
             <option value="random" {% if sort == "random" %}selected{% endif %}>Random</option>
         </select>
-    
-        <label for="filter_type">Filter By:</label>
+        
         <select id="filter_type">
             <option value="all" {% if filter == "all" %}selected{% endif %}>All Posts</option>
             <option value="liked" {% if filter == "liked" %}selected{% endif %}>Liked Posts</option>
             <option value="favorited" {% if filter == "favorited" %}selected{% endif %}>Favorited Posts</option>
+            <option value="have_seen" {% if filter == "have_seen" %}selected{% endif %}>Have Seen</option>
+            <option value="haven't_seen" {% if filter == "haven't_seen" %}selected{% endif %}>Haven't Seen</option>
         </select>
-    
+        
         <input type="text" id="search_input" placeholder="Search posts..." value="{{ search }}">
     </div>
+    
     
 
     <a href="/post-create"><button class="new-post-btn">Create New Post</button></a>
@@ -216,6 +250,47 @@
                 });
             }
         });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const filterForm = document.getElementById('filter-form');
+            const resetFilters = () => {
+                const defaultSortValue = 'newest';
+                const defaultFilterValue = 'all';
+        
+                document.getElementById('sort_filter').value = defaultSortValue;
+                document.getElementById('filter_type').value = defaultFilterValue;
+                document.getElementById('search_input').value = '';
+            };
+        
+            resetFilters();
+        
+            const updatePosts = async () => {
+                const sortFilter = document.getElementById('sort_filter').value;
+                const filterType = document.getElementById('filter_type').value;
+                const searchQuery = document.getElementById('search_input').value;
+        
+                const response = await fetch(`/posts?page=${currentPage}&limit=20&sort=${sortFilter}&filter=${filterType}&search=${searchQuery}`);
+                const data = await response.text();
+        
+                const newPosts = new DOMParser().parseFromString(data, 'text/html').getElementById('posts-container').innerHTML;
+                postContainer.innerHTML = newPosts;
+            };
+        
+            document.getElementById('sort_filter').addEventListener('change', updatePosts);
+            document.getElementById('filter_type').addEventListener('change', updatePosts);
+            document.getElementById('search_input').addEventListener('input', updatePosts);
+        
+            window.addEventListener('scroll', () => {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                    if (loadingIndicator.style.display !== 'none') return;
+                    loadingIndicator.style.display = 'block';
+                    loadMorePosts().then(() => {
+                        loadingIndicator.style.display = 'none';
+                    });
+                }
+            });
+        });
+        
     </script>
     
 </body>

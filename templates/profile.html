@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ login }}'s Profile</title>
+    <style>
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            height: 250px;
+        }
+
+        .nav-form {
+            display: flex;
+            align-items: start;
+            gap: 40px;
+        }
+
+        .nav-form p, button {
+            font-size: 24px;
+        }
+
+        h1, .nav-form p {
+            user-select: none;
+        }
+
+        .profile {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-flow: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/posts" style="text-decoration: none; color: black; font-size: 40px; user-select: none;">Back</a>
+        <form action="/logout" method="post" class="nav-form">
+            <button type="submit" style="margin-right: 20px;">Sign Out</button>
+        </form>
+    </div>
+
+    <div class="profile">
+        <h1>{{ login }}'s Profile</h1>
+        <h2>Profile Details</h2>
+        <p><strong>Login:</strong> {{ login }}</p>
+        <p><strong>Registration Date:</strong> {{ registered_at }}</p>
+
+        <h3>Statistics</h3>
+        <p><strong>Total Posts:</strong> {{ total_posts }}</p>
+        <p><strong>Total Views:</strong> {{ total_views }}</p>
+        <p><strong>Total Likes:</strong> {{ total_likes }}</p>
+        <p><strong>Total Favorites:</strong> {{ total_favorites }}</p>
+
+        <h3>Personal Interactions</h3>
+        <p><strong>Viewed:</strong> {{ total_user_views }}</p>
+        <p><strong>Liked:</strong> {{ total_user_likes }}</p>
+        <p><strong>Favorited:</strong> {{ total_user_favorites }}</p>
+
+        <h3>Last Post</h3>
+        <p><strong>Date of Last Post:</strong> {{ last_post_date }}</p>
+    </div>
+</body>
+</html>

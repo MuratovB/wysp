@@ -4,10 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WYSP - Homepage</title>
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-flow: column;
+            gap: 20px;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .btn {
+            font-size: 24px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Your creativity starts here</h1>
-    <a href="/register"><button>Register</button></a>
-    <a href="/login"><button>Login</button></a>
+    <div class="container">
+        <h1 style="user-select: none;">Your creativity starts here</h1>
+        <a href="/register"><button class="btn">Register</button></a>
+        <a href="/login"><button class="btn">Login</button></a>
+    </div>
 </body>
 </html>

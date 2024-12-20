@@ -107,7 +107,12 @@ async def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/posts", response_class=HTMLResponse)
-async def posts(request: Request, page: int = 1, limit: int = 20, sort: str = "newest", filter: str = "all", search: str = ""):
+async def posts(request: Request, page: int = 1, limit: int = 20, sort: str = "newest", filter: str = "all", search: str = "", user_login: str = Depends(get_user_login), user_id: int = Depends(get_user_id)):
+    if sort not in ["newest", "oldest", "likes", "favorites", "views", "random"]:
+        sort = "newest"
+    if filter not in ["all", "liked", "favorited", "have_seen", "haven't_seen"]:
+        filter = "all"
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -118,19 +123,40 @@ async def posts(request: Request, page: int = 1, limit: int = 20, sort: str = "n
     params = []
 
     if filter == "liked":
-        query += " JOIN likes ON posts.id = likes.post_id WHERE likes.user_id = ?"
+        query += """
+            JOIN likes ON posts.id = likes.post_id
+            WHERE likes.user_id = ?
+        """
         filters.append("liked")
         params.append(request.session.get("user_id"))
     elif filter == "favorited":
-        query += " JOIN favorites ON posts.id = favorites.post_id WHERE favorites.user_id = ?"
+        query += """
+            JOIN favorites ON posts.id = favorites.post_id
+            WHERE favorites.user_id = ?
+        """
         filters.append("favorited")
         params.append(request.session.get("user_id"))
-    
+    elif filter == "have_seen":
+        query += """
+            JOIN post_views ON posts.id = post_views.post_id
+            WHERE post_views.user_id = ?
+        """
+        filters.append("have_seen")
+        params.append(request.session.get("user_id"))
+    elif filter == "haven't_seen":
+        query += """
+            LEFT JOIN post_views ON posts.id = post_views.post_id AND post_views.user_id = ?
+            WHERE post_views.user_id IS NULL
+        """
+        filters.append("haven't_seen")
+        params.append(request.session.get("user_id"))
+
+
     if search:
         if filters:
-            query += " AND post_name LIKE ? OR login LIKE ?"
+            query += " AND (post_name LIKE ? OR login LIKE ?)"
         else:
-            query += " WHERE post_name LIKE ? OR login LIKE ?"
+            query += " WHERE (post_name LIKE ? OR login LIKE ?)"
         params.extend([f"%{search}%", f"%{search}%"])
 
     if sort == "likes":
@@ -161,39 +187,108 @@ async def posts(request: Request, page: int = 1, limit: int = 20, sort: str = "n
         "page": page,
         "sort": sort,
         "filter": filter,
-        "search": search
+        "search": search,
+        "login": user_login
     })
 
 
 
 @app.get("/posts/{id}", response_class=HTMLResponse)
-async def posts_detail(request: Request, id: int):
+async def posts_detail(request: Request, id: int, user_id: int = Depends(get_user_id)):
     user_id = request.session.get("user_id")
     
+    if user_id is None:
+        raise HTTPException(status_code=403, detail="You must be logged in")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?', (user_id, id))
-    is_liked = cursor.fetchone() is not None
+    cursor.execute('SELECT 1 FROM post_views WHERE user_id = ? AND post_id = ?', (user_id, id))
+    has_viewed = cursor.fetchone()
 
-    cursor.execute('SELECT 1 FROM favorites WHERE user_id = ? AND post_id = ?', (user_id, id))
-    is_favorite = cursor.fetchone() is not None
+    if not has_viewed:
+        cursor.execute('UPDATE posts SET views = views + 1 WHERE id = ?', (id,))
+        cursor.execute('INSERT INTO post_views (user_id, post_id) VALUES (?, ?)', (user_id, id))
+        conn.commit()
 
     cursor.execute('SELECT * FROM posts WHERE id = ?', (id,))
     post = cursor.fetchone()
 
     post_data = process_posts([post])[0]
-    post_data['is_liked'] = is_liked
-    post_data['is_favorite'] = is_favorite
 
     conn.close()
 
     return templates.TemplateResponse("post_detail.html", {"request": request, "post": post_data})
 
+@app.get("/profile/{login}", response_class=HTMLResponse)
+async def profile(request: Request, login: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT id, login, registered_at FROM users WHERE login = ?', (login,))
+    user_data = cursor.fetchone()
+
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_id = user_data['id']
+    registered_at = user_data['registered_at']
+
+    cursor.execute('''
+        SELECT 
+            SUM(views) AS total_views,
+            SUM(likes) AS total_likes,
+            SUM(favorites) AS total_favorites
+        FROM posts
+        WHERE user_id = ?
+    ''', (user_id,))
+    stats = cursor.fetchone()
+
+    total_views = stats['total_views'] or 0
+    total_likes = stats['total_likes'] or 0
+    total_favorites = stats['total_favorites'] or 0
+
+    cursor.execute('''
+        SELECT COUNT(*) AS total_posts, MAX(created_at) AS last_post_date
+        FROM posts
+        WHERE user_id = ?
+    ''', (user_id,))
+    post_stats = cursor.fetchone()
+
+    total_posts = post_stats['total_posts'] or 0
+    last_post_date = post_stats['last_post_date'] or "N/A"
+
+    cursor.execute('''
+        SELECT 
+            (SELECT COUNT(*) FROM post_views WHERE user_id = ? AND post_id IN (SELECT id FROM posts WHERE user_id = ?)) AS total_user_views,
+            (SELECT COUNT(*) FROM likes WHERE user_id = ? AND post_id IN (SELECT id FROM posts WHERE user_id = ?)) AS total_user_likes,
+            (SELECT COUNT(*) FROM favorites WHERE user_id = ? AND post_id IN (SELECT id FROM posts WHERE user_id = ?)) AS total_user_favorites
+    ''', (user_id, user_id, user_id, user_id, user_id, user_id))
+    personal_stats = cursor.fetchone()
+
+    total_user_views = personal_stats['total_user_views'] or 0
+    total_user_likes = personal_stats['total_user_likes'] or 0
+    total_user_favorites = personal_stats['total_user_favorites'] or 0
+
+    conn.close()
+
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "login": login,
+        "registered_at": registered_at,
+        "total_views": total_views,
+        "total_likes": total_likes,
+        "total_favorites": total_favorites,
+        "total_posts": total_posts,
+        "last_post_date": last_post_date,
+        "total_user_views": total_user_views,
+        "total_user_likes": total_user_likes,
+        "total_user_favorites": total_user_favorites,
+    })
 
 
 @app.get("/post-create", response_class=HTMLResponse)
-async def post_create(request: Request):
+async def post_create(request: Request, user_id: int = Depends(get_user_id)):
     return templates.TemplateResponse("post_create.html", {"request": request})
 
 
@@ -225,6 +320,11 @@ async def login(user: UserLogin, request: Request):
         request.session['user_id'] = db_user['id']
         return RedirectResponse(url="/posts", status_code=303)
     raise HTTPException(status_code=400, detail="Invalid credentials")
+
+@app.post("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/", status_code=303)
 
 @app.post("/post-create")
 async def post_create_action(

@@ -23,8 +23,8 @@
     </style>
 </head>
 <body>
-    <a href="/posts" style="text-decoration: none; color: black; font-size: 40px;">Back</a>
-    <h1>Post Details</h1>
+    <a href="/posts" style="text-decoration: none; color: black; font-size: 40px; user-select: none;">Back</a>
+    <h1 style="user-select: none;">Post Details</h1>
     <div class="post-detail-container">
         <div class="post-detail">
             <div class="img-container">
@@ -33,7 +33,7 @@
             <div class="post-detail-info">
                 <h2>{{ post.post_name }}</h2>
                 <p>Posted on: {{ post.created_at }}</p>
-                <p>Author: {{ post.login }}</p>
+                <a href="/profile/{{ post.login }}" style="text-decoration: none; color: black;"><p>Author: <span style="text-decoration: underline;">{{ post.login }}</span></p></a>
                 <p>Likes: {{ post.likes }} | Views: {{ post.views }} | Favorites: {{ post.favorites }}</p>
             </div>
         </div>
