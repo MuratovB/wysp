@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSP - Create Post</title>
+    <style>
+        .uploads {
+            display: flex;
+            flex-flow: column;
+            gap: 10px;
+        }
+
+        .upload-container {
+            display: flex;
+        }
+        
+        .label {
+            width: 100px;
+        }
+        
+        .input {
+            width: 200px;
+        }
+
+        .btn {
+            width: 125px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create New Post</h1>
+
+    <div id="error-message" style="color: red; display: none;"></div>
+
+    <form id="post-form" action="/post-create" method="post" enctype="multipart/form-data">
+        <label for="post_name">Post Name:</label>
+        <input type="text" id="post_name" name="post_name" required><br><br>
+        <div class="uploads">
+            <div class="upload-container">
+                <div class="label"><label for="audio">Audio:</label></div>
+                <div class="input"><input type="file" id="audio" name="audio" accept=".mp3"></div>
+                <div class="btn"><button type="button" onclick="clearFileInput('audio')">Clear</button><br><br></div>
+            </div>
+
+            <div class="upload-container">
+                <div class="label"><label for="video">Video:</label></div>
+                <div class="input"><input type="file" id="video" name="video" accept=".mp4"></div>
+                <div class="btn"><button type="button" onclick="clearFileInput('video')">Clear</button><br><br></div>
+            </div>
+
+            <div class="upload-container">
+                <div class="label"><label for="text">Text:</label></div>
+                <div class="input"><input type="file" id="text" name="text" accept=".pdf"></div>
+                <div class="btn"><button type="button" onclick="clearFileInput('text')">Clear</button><br><br></div>
+            </div>
+
+            <div class="upload-container">
+                <div class="label"><label for="img">Image:</label></div>
+                <div class="input"><input type="file" id="img" name="img" accept=".png"></div>
+                <div class="btn"><button type="button" onclick="clearFileInput('img')">Clear</button><br><br></div>
+            </div>
+        </div>
+
+        <p>Only .mp3, .mp4, .pdf and .png are supported</p>
+        <button type="submit">Post</button>
+    </form>
+
+    <script>
+        function clearFileInput(inputId) {
+            document.getElementById(inputId).value = '';
+        }
+
+        const form = document.getElementById("post-form");
+        const errorMessageDiv = document.getElementById("error-message");
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+
+            const response = await fetch("/post-create", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessageDiv.style.display = "block";
+                    errorMessageDiv.textContent = errorData.detail;
+                }
+            } else {
+                window.location.href = "/posts";
+            }
+        });
+    </script>
+</body>
+</html>

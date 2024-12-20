@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSP - Post Details</title>
+    <style>
+        /* Добавление стилей для отображения поста */
+        .post-detail-container {
+            margin: 20px;
+        }
+
+        .post-detail {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .post-detail img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .post-detail-info {
+            flex-grow: 1;
+        }
+
+        .post-detail h2 {
+            margin: 0;
+        }
+
+        .post-detail-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .media-section {
+            margin-top: 20px;
+        }
+
+        .media-section p {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .media-section a {
+            display: inline-block;
+            margin: 5px 0;
+            text-decoration: none;
+        }
+
+        .media-section a:hover {
+            text-decoration: underline;
+        }
+
+        .media-section audio, .media-section video {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Post Details</h1>
+    <div class="post-detail-container">
+        <div class="post-detail">
+            <img src="{{ post.img if post.img else "https://cdn-icons-png.flaticon.com/512/15795/15795219.png" }}" alt="">
+            <div class="post-detail-info">
+                <h2>{{ post.post_name }}</h2>
+                <p>Posted on: {{ post.created_at }}</p>
+                <p>Author: {{ post.login }}</p>
+                <p>Likes: {{ post.likes }} | Views: {{ post.views }} | Favorites: {{ post.favorites }}</p>
+            </div>
+        </div>
+
+        <div class="media-section">
+            <div>
+                {% if post.audio %}
+                <p>Audio:</p>
+                <audio controls>
+                    <source src="{{ post.audio }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                {% else %}
+                <p>No audio available</p>
+                {% endif %}
+            </div>
+
+            <div style="width: 40vw;">
+                {% if post.video %}
+                <p>Video:</p>
+                <video controls>
+                    <source src="{{ post.video }}" type="video/mp4">
+                    Your browser does not support the video element.
+                </video>
+                {% else %}
+                <p>No video available</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {% if post.text %}
+                <p>Text (from PDF):</p>
+                <a href="{{ post.text }}" target="_blank">Read PDF</a>
+                {% else %}
+                <p>No text available</p>
+                {% endif %}
+            </div>            
+        </div>
+    </div>
+</body>
+</html>
