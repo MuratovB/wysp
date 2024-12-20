@@ -120,14 +120,30 @@ async def posts(request: Request):
 
 @app.get("/posts/{id}", response_class=HTMLResponse)
 async def posts_detail(request: Request, id: int):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=403, detail="You must be logged in")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute('SELECT 1 FROM post_views WHERE user_id = ? AND post_id = ?', (user_id, id))
+    already_viewed = cursor.fetchone()
+
+    if not already_viewed:
+        cursor.execute('UPDATE posts SET views = views + 1 WHERE id = ?', (id,))
+        cursor.execute('INSERT INTO post_views (user_id, post_id) VALUES (?, ?)', (user_id, id))
+        conn.commit()
+
     cursor.execute('SELECT * FROM posts WHERE id = ?', (id,))
     post = cursor.fetchone()
     post = process_posts([post])[0]
+    
     conn.close()
-    print(post['text_name'])
+    
     return templates.TemplateResponse("post_detail.html", {"request": request, "post": post})
+
+
 
 @app.get("/post-create", response_class=HTMLResponse)
 async def post_create(request: Request):

@@ -51,6 +51,16 @@ def init_db():
     ''')
 
     cursor.execute('''
+        CREATE TABLE post_views (
+            user_id INTEGER,
+            post_id INTEGER,
+            PRIMARY KEY (user_id, post_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (post_id) REFERENCES posts(id)
+        );
+    ''')
+
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS likes (
             user_id INTEGER NOT NULL,
             post_id INTEGER NOT NULL,
