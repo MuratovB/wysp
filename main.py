@@ -1,16 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, Form, File, UploadFile, status
+from fastapi import FastAPI, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi.staticfiles import StaticFiles
 import os
-import magic
-import uuid
-from io import BytesIO
 import base64
 from datetime import datetime
+from pathlib import Path
 from db import get_db_connection, hash_password, check_password
-from models import UserCreate, UserLogin, PostCreate, Post
+from models import UserCreate, UserLogin
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -19,6 +16,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="very-and-truly-secret-key122")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WYSP - Homepage</title>
+    <link rel="icon" href="/static/logo.png" type="image/png">
     <style>
         .container {
             display: flex;
@@ -11,8 +12,13 @@
             align-items: center;
             flex-flow: column;
             gap: 20px;
-            width: 100vw;
+            width: 99vw;
             height: 90vh;
+        }
+
+        .img-container {
+            padding: 0;
+            margin: 0;
         }
 
         .btn {
@@ -22,8 +28,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>WYSP</h2>
-        <h2 style="user-select: none;">Your creativity starts here</h2>
+        <div class="img-container">
+            <img src="/static/logo.png" alt="">
+        </div>
+        <h1 style="user-select: none;">Your creativity starts here</h1>
         <a href="/register"><button class="btn">Register</button></a>
         <a href="/login"><button class="btn">Login</button></a>
     </div>
